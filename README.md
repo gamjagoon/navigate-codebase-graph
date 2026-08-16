@@ -7,14 +7,14 @@ An agent skill for architecture reviews that combines deep-module analysis with 
 Install globally for the agents detected by the Skills CLI:
 
 ```bash
-DISABLE_TELEMETRY=1 npx skills add gamjagoon/codebase-architecture \
+DISABLE_TELEMETRY=1 npx skills add gamjagoon/navigate-codebase-graph \
   --skill codebase-architecture --global --agent '*' --yes
 ```
 
 Or target one agent:
 
 ```bash
-DISABLE_TELEMETRY=1 npx skills add gamjagoon/codebase-architecture \
+DISABLE_TELEMETRY=1 npx skills add gamjagoon/navigate-codebase-graph \
   --skill codebase-architecture --global --agent codex --yes
 ```
 
@@ -44,4 +44,3 @@ The skill never installs software, edits agent instructions, creates a project i
 
 See [SOURCES.md](SOURCES.md) for attribution, license boundaries, and the
 distinction between adapted workflow ideas and independently authored code.
-

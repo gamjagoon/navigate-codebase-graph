@@ -1,0 +1,23 @@
+{
+  "skill_name": "codebase-architecture",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this repository's architecture and find the first module you would deepen. CodeGraph is already indexed; use its call paths and impact evidence, then produce the normal HTML architecture report without changing code.",
+      "expected_output": "A temp HTML report with candidates, graph evidence, source/test corroboration, before/after diagrams, and a top recommendation.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Set up CodeGraph for this project, detect whether I am using Codex or Claude Code, inspect the skills already installed, and add the CodeGraph architecture guidance to the narrowest existing instruction file. Show the planned writes before applying them.",
+      "expected_output": "A bounded preflight, explicit setup plan, detected agent/skill paths, verified CodeGraph status, and a marked non-destructive instruction update.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Install the tdd skill from https://github.com/mattpocock/skills for my active agent, but do not install unrelated skills or overwrite an existing copy. Report the exact source, scope, collision status, and verification result.",
+      "expected_output": "Only the named skill is installed or a collision is reported; the result includes exact source, target agent/scope, resolved SKILL.md, and no unrelated changes.",
+      "files": []
+    }
+  ]
+}
