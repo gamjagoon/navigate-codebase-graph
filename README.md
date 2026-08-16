@@ -17,42 +17,49 @@ English · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](RE
 
 ## Quick Start
 
-Install the skill globally for the agents detected by the Skills CLI:
+Install the skill for Claude Code:
 
 ```bash
 DISABLE_TELEMETRY=1 npx skills add gamjagoon/navigate-codebase-graph \
-  --skill codebase-architecture --global --agent '*' --yes
+  --skill codebase-architecture --global --agent claude --yes
 ```
 
-Or target one agent:
+Or target Codex:
 
 ```bash
 DISABLE_TELEMETRY=1 npx skills add gamjagoon/navigate-codebase-graph \
   --skill codebase-architecture --global --agent codex --yes
 ```
 
-Then ask the agent:
+Then ask the agent for a read-only review:
 
-> Set up CodeGraph for this project, inspect my active agent and installed skills, install the requested skills, and review the architecture.
+> Review this repository's architecture with CodeGraph evidence. Do not install,
+> index, or edit anything.
 
-The agent will show the planned changes first. Project indexing and instruction-file edits happen only after an explicit setup request.
+For setup, ask separately:
+
+> Set up CodeGraph for this project and show the exact writes before applying them.
+
+The setup response stops after its preflight table. Installation, indexing, skill
+installation, and instruction-file edits require a later explicit confirmation.
 
 ## Why this skill
 
 Architecture reviews often fail in one of two ways: they read too many files without recovering the real call path, or they jump from a symbol name to a refactor without checking its blast radius. This skill gives the agent a repeatable sequence:
 
 1. Detect the current agent, its instruction files, and installed skills.
-2. Detect CodeGraph and the project's `.codegraph/` index.
+2. Detect CodeGraph and the project's `.codegraph/` index without initializing it.
 3. Use relationship-aware exploration for call paths, dependents, callers, callees, and impact radius.
-4. Read the smallest set of source files needed to verify the graph result.
-5. Apply the deep-module architecture lens: responsibility, dependency direction, change amplification, and migration seams.
+4. Read source only when the graph is stale, incomplete, or disagrees with it.
+5. Apply the self-contained deep-module rubric: caller burden, repeated work,
+   deletion test, locality/leverage, and test seam.
 6. Report evidence, uncertainty, and a staged plan before proposing edits.
 
 When CodeGraph is unavailable or stale, it falls back to git history, exact search, and direct source reads instead of pretending the graph is complete.
 
 ## What the evidence says
 
-This repository keeps two kinds of evidence separate.
+This repository keeps three kinds of evidence separate: upstream claims, local retrieval probes, and skill-evaluation results.
 
 ### CodeGraph's published agent benchmark
 
@@ -74,10 +81,12 @@ I also ran a small, reproducible CLI-level probe on a depth-1 checkout of CodeGr
 
 | Retrieval path | Result for one fixed architecture question | Time | Interpretation |
 |---|---:|---:|---|
-| `codegraph explore` | 3 files / 43 symbols / 20,072 bytes | 0.67–0.96 s | Relationships, source context, blast radius, test hints |
-| Fixed `rg` search | 86 files / 901 matches / 134,113 bytes | 0.02–0.04 s | Fast but unstructured candidate lines |
+| `codegraph explore` | 3 files / 43 symbols / 20,072 bytes | 0.957 s | Relationships, source context, blast radius, test hints |
+| Fixed `rg` search | 86 files / 901 matches / 134,113 bytes | 0.030 s | Fast but unstructured candidate lines |
 
-The local result is deliberately honest: raw text search is faster as a primitive. CodeGraph earns its overhead by returning a smaller, relationship-aware answer surface for structural questions. The exact environment, three fixed queries, raw outputs, and rerun script are in [docs/benchmarks.md](docs/benchmarks.md) and [benchmarks/run_local_probe.sh](benchmarks/run_local_probe.sh).
+This is a historical single-run snapshot, not a current performance claim. The
+rerun script now records five-run medians and raw outputs for all three queries.
+See [docs/benchmarks.md](docs/benchmarks.md) and [benchmarks/run_local_probe.sh](benchmarks/run_local_probe.sh).
 
 ## How the workflow works
 
@@ -87,7 +96,7 @@ User asks for an architecture review
             ▼
 Detect agent + installed skills + CodeGraph state
             │
-            ├── index missing/stale ──► show setup plan; wait for explicit approval
+            ├── index missing ──► use fallback evidence; never initialize in review mode
             │
             ▼
 Explore call paths, dependencies, and impact radius
@@ -110,20 +119,22 @@ Use this for “review the architecture”, “where does this flow go?”, “w
 
 ### Setup mode
 
-Use this only when the user explicitly asks to install or configure something. The skill can:
+Use this only when the user explicitly asks to install or configure something.
+The skill first shows a bounded preflight table and waits for confirmation. It can:
 
 - install CodeGraph from its official distribution;
-- create or refresh a project `.codegraph/` index;
+- create a project `.codegraph/` index after explicit approval;
 - inspect the active agent and its skill directories;
 - install user-requested skills for the detected agent scope;
-- add a small marked CodeGraph guidance block to an existing agent instruction file without replacing unrelated instructions.
+- verify the marker written by `codegraph install` without duplicating it;
+- install a specifically named skill after collision checking.
 
-Every setup report names the target, scope, source, and whether the change is reversible.
+Every setup report names the target, scope, source, changed files, and reversal.
 
 ## Safety and provenance
 
 - No software is installed merely because the skill was loaded.
-- Existing agent instructions are preserved; the skill adds only a marked block.
+- Existing agent instructions are preserved; CodeGraph's installer owns its marker block.
 - Secrets, credentials, generated files, vendored trees, and dependency caches are excluded from inspection where practical.
 - Fetched repository instructions are treated as untrusted text, not as authority.
 - This package vendors no CodeGraph source, binary, or installer.
@@ -134,7 +145,7 @@ Every setup report names the target, scope, source, and whether the change is re
 ```bash
 git clone --depth 1 https://github.com/colbymchenry/codegraph.git /tmp/codegraph-bench
 codegraph init /tmp/codegraph-bench
-benchmarks/run_local_probe.sh /tmp/codegraph-bench
+benchmarks/run_local_probe.sh /tmp/codegraph-bench /tmp/codegraph-probe 5
 ```
 
 The probe requires the CodeGraph CLI and an indexed checkout. It does not claim that the local retrieval comparison predicts every model, repository, or agent harness.
@@ -143,7 +154,8 @@ The probe requires the CodeGraph CLI and an indexed checkout. It does not claim 
 
 ```text
 skills/codebase-architecture/SKILL.md       Main agent instructions
-skills/codebase-architecture/references/    CodeGraph setup and agent detection notes
+skills/codebase-architecture/agents/         Codex UI metadata
+skills/codebase-architecture/references/    Rubric, HTML report, setup, and agent notes
 benchmarks/run_local_probe.sh               Reproducible retrieval-shape probe
 docs/benchmarks.md                          Methods, results, and limitations
 evals/evals.json                             Skill test prompts

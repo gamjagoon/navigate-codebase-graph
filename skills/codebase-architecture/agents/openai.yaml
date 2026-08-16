@@ -1,0 +1,7 @@
+interface:
+  display_name: "Codebase Architecture"
+  short_description: "Review architecture with CodeGraph evidence"
+  default_prompt: "Use $codebase-architecture to review this repository's architecture and identify evidence-backed deepening candidates."
+
+policy:
+  allow_implicit_invocation: true

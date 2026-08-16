@@ -2,8 +2,9 @@
 
 ## Matt Pocock's skills repository
 
-The adapted architecture-review workflow is from `mattpocock/skills` and is
-licensed under the MIT License.
+The adapted architecture-review workflow, deep-module vocabulary, candidate
+rubric, and HTML report guidance are from `mattpocock/skills` and are licensed
+under the MIT License.
 
 Copyright (c) 2026 Matt Pocock
 
@@ -55,4 +56,3 @@ SOFTWARE.
 The Skills CLI is invoked as an external installer and is not redistributed in
 this repository. Its source is available at <https://github.com/vercel-labs/skills>
 under the MIT License, copyright (c) 2026 Vercel, Inc.
-

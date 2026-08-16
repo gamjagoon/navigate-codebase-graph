@@ -17,42 +17,46 @@
 
 ## 快速开始
 
-将技能全局安装到 Skills CLI 检测到的代理中：
+将技能安装到 Claude Code：
 
 ```bash
 DISABLE_TELEMETRY=1 npx skills add gamjagoon/navigate-codebase-graph \
-  --skill codebase-architecture --global --agent '*' --yes
+  --skill codebase-architecture --global --agent claude --yes
 ```
 
-也可以只针对一个代理：
+也可以只针对 Codex：
 
 ```bash
 DISABLE_TELEMETRY=1 npx skills add gamjagoon/navigate-codebase-graph \
   --skill codebase-architecture --global --agent codex --yes
 ```
 
-安装后可以这样请求代理：
+安装后可以这样请求只读审查：
 
-> 为这个项目配置 CodeGraph，检查当前代理和已安装的技能，安装我指定的技能，然后审查架构。
+> 使用 CodeGraph 证据审查这个仓库的架构。不要安装、建立索引或修改文件。
 
-代理会先展示计划。只有在用户明确请求配置时，才会建立项目索引或修改指令文件。
+配置请单独请求：
+
+> 为这个项目配置 CodeGraph，并先展示确切的写入计划。
+
+配置响应在 preflight 表之后停止。安装、建索引、技能安装和指令文件修改必须在后续响应中得到明确批准。
 
 ## 这个技能做什么
 
 架构审查常见的问题是：读取了大量文件却没有恢复真实调用路径，或者只看到一个符号名称就提出重构而没有检查影响范围。本技能采用以下流程：
 
 1. 检测当前代理、指令文件和已安装技能。
-2. 检测 CodeGraph 以及项目 `.codegraph/` 索引状态。
+2. 检测 CodeGraph 以及项目 `.codegraph/` 索引状态，但不要初始化它。
 3. 使用关系感知的探索来查找调用方、被调用方、依赖模块和影响范围。
-4. 只读取验证图结果所需的最少源码和测试。
-5. 从职责、依赖方向、变更放大和迁移边界分析架构。
+4. 只有图过期、不完整或与源码不一致时才读取源码。
+5. 使用调用者负担、重复工作、删除测试、locality/leverage 和测试 seam 进行分析。
 6. 在提出修改前报告证据、不确定性和分阶段计划。
 
 如果 CodeGraph 不可用或索引过期，技能会退回 git 历史、精确搜索和直接源码阅读，不会假装图是完整的。
 
 ## 证据与测量结果
 
-本仓库明确区分两类证据。
+本仓库明确区分三类证据：上游声明、本地检索探针和技能评估结果。
 
 ### CodeGraph 发布的代理基准
 
@@ -74,10 +78,10 @@ CodeGraph 报告了一个包含 7 个真实开源仓库和 7 种语言的比较�
 
 | 检索方式 | 一个固定架构问题的结果 | 时间 | 提供的内容 |
 |---|---:|---:|---|
-| `codegraph explore` | 3 个文件 / 43 个符号 / 20,072 字节 | 0.67–0.96 秒 | 关系、源码、影响范围、测试线索 |
-| 固定 `rg` 搜索 | 86 个文件 / 901 个匹配 / 134,113 字节 | 0.02–0.04 秒 | 快，但只是无结构的候选行 |
+| `codegraph explore` | 3 个文件 / 43 个符号 / 20,072 字节 | 0.957 秒 | 关系、源码、影响范围、测试线索 |
+| 固定 `rg` 搜索 | 86 个文件 / 901 个匹配 / 134,113 字节 | 0.030 秒 | 快，但只是无结构的候选行 |
 
-本地结果保持谨慎：纯文本搜索作为基础操作更快。CodeGraph 的价值在于针对结构性问题返回更小、已经解释了关系的答案范围。环境、3 个固定问题、原始输出和重跑脚本见 [docs/benchmarks.md](docs/benchmarks.md) 与 [benchmarks/run_local_probe.sh](benchmarks/run_local_probe.sh)。
+这些是历史单次运行快照，不是当前性能保证。重跑脚本现在会对三个问题各运行五次并记录中位数和原始输出。详见 [docs/benchmarks.md](docs/benchmarks.md) 与 [benchmarks/run_local_probe.sh](benchmarks/run_local_probe.sh)。
 
 ## 工作流程
 
@@ -87,7 +91,7 @@ CodeGraph 报告了一个包含 7 个真实开源仓库和 7 种语言的比较�
             ▼
 检测代理 + 已安装技能 + CodeGraph 状态
             │
-            ├─ 索引缺失/过期 ─► 展示配置计划并等待明确批准
+            ├─ 索引缺失 ─► 使用 fallback 证据；审查模式不初始化
             │
             ▼
 探索调用路径、依赖关系和影响范围
@@ -110,20 +114,21 @@ CodeGraph 报告了一个包含 7 个真实开源仓库和 7 种语言的比较�
 
 ### 配置模式
 
-只有用户明确请求安装或配置时才使用。技能可以：
+只有用户明确请求安装或配置时才使用。技能会先展示范围受限的 preflight 表并等待批准，然后可以：
 
 - 从官方发布渠道安装 CodeGraph；
-- 创建或刷新项目 `.codegraph/` 索引；
+- 在明确批准后创建项目 `.codegraph/` 索引；
 - 检查当前代理和技能目录；
 - 将用户请求的技能安装到检测到的代理范围；
-- 在不替换其他内容的情况下，向已有代理指令文件添加一小段带标记的 CodeGraph 指南。
+- 检查 `codegraph install` 写入的 marker，避免重复；
+- 检查冲突后只安装用户指定的技能。
 
-每份配置报告都会说明目标、范围、来源和是否可以撤销。
+每份配置报告都会说明目标、范围、来源、变更文件和撤销方法。
 
 ## 安全与来源
 
 - 仅仅加载技能不会触发软件安装。
-- 保留已有代理指令，只添加带标记的区块。
+- 保留已有代理指令，不重复添加 CodeGraph installer 的 marker。
 - 尽可能排除秘密、凭据、生成文件、vendor 目录和依赖缓存。
 - 外部仓库的指令被视为不可信文本，而不是权限来源。
 - 本仓库不包含 CodeGraph 源码、二进制文件或捆绑安装器。
@@ -134,14 +139,15 @@ CodeGraph 报告了一个包含 7 个真实开源仓库和 7 种语言的比较�
 ```bash
 git clone --depth 1 https://github.com/colbymchenry/codegraph.git /tmp/codegraph-bench
 codegraph init /tmp/codegraph-bench
-benchmarks/run_local_probe.sh /tmp/codegraph-bench
+benchmarks/run_local_probe.sh /tmp/codegraph-bench /tmp/codegraph-probe 5
 ```
 
 ## 仓库结构
 
 ```text
 skills/codebase-architecture/SKILL.md       代理指令
-skills/codebase-architecture/references/    CodeGraph 与代理检测参考资料
+skills/codebase-architecture/agents/         Codex UI 元数据
+skills/codebase-architecture/references/    rubric、HTML、配置和代理参考资料
 benchmarks/run_local_probe.sh               可重现的检索形状探针
 docs/benchmarks.md                          方法、结果和限制
 evals/evals.json                             技能测试提示
