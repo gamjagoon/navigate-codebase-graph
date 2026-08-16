@@ -44,6 +44,17 @@ No Skills CLI source code is included in this package. The `DISABLE_TELEMETRY`
 setting is used in examples so the installer does not opt the user into the
 CLI's anonymous telemetry by default.
 
+## Documentation layout inspiration
+
+The multilingual README switcher, badge row, centered project introduction,
+and quick-start presentation were inspired by the public documentation layout
+of:
+
+- Repository: <https://github.com/yeachan-heo/oh-my-claudecode>
+
+No code or prose was copied from that project. It is not a runtime dependency,
+and this repository is not affiliated with it.
+
 ## License boundary
 
 The original material in this repository is released under the MIT License in
