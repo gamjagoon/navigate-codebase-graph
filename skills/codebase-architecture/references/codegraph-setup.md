@@ -1,28 +1,35 @@
 # CodeGraph Setup Reference
 
-This reference records the integration contract used by the skill. Re-check the upstream README when behavior or commands may have changed.
-
-Primary sources:
-
-- [CodeGraph README](https://github.com/colbymchenry/codegraph)
-- [CodeGraph MCP tools](https://github.com/colbymchenry/codegraph#mcp-tools)
-- [CodeGraph benchmark results and methodology](https://github.com/colbymchenry/codegraph#benchmark-results)
+Use this file only when the user explicitly asks for CodeGraph installation,
+agent connection, project indexing, or status inspection. Re-check the
+upstream README when commands or supported agents may have changed.
 
 ## Official lifecycle
 
-1. Install the `codegraph` CLI from the official `colbymchenry/codegraph` repository.
-2. Run `codegraph install` to connect selected agents to the CodeGraph MCP server.
-3. Run `codegraph init <project>` to create the project's local `.codegraph/` index.
-4. Use `codegraph status <project>` to check freshness and pending work.
+1. Check for an existing `codegraph` binary and run `codegraph version`.
+2. Use `codegraph help install` to discover the current target IDs.
+3. After confirmation, connect the selected agent with an explicit target and
+   location:
 
-Do not conflate agent connection with project indexing. The first configures an agent; the second changes the project by creating an index.
+   ```text
+   codegraph install --target=<verified-agent-id> --location=<global-or-local> --yes --no-permissions
+   ```
 
-## Query preference
+4. After a restart, initialize only an explicitly approved project:
 
-The preferred MCP tool is `codegraph_explore`. It should be queried directly for structural questions because it returns relevant source, relationships/call paths, and a blast-radius summary in one result. The CLI equivalents are:
+   ```text
+   codegraph init <absolute-project-root>
+   codegraph status <absolute-project-root>
+   ```
+
+Agent connection and project indexing are different writes. Never combine
+them into one unreviewed action.
+
+## Review-time commands
 
 ```text
-codegraph explore <query>
+codegraph explore --path <project> <query>
+codegraph node <symbol-or-file>
 codegraph callers <symbol>
 codegraph callees <symbol>
 codegraph impact <symbol>
@@ -30,23 +37,29 @@ codegraph affected <files...>
 codegraph status <project>
 ```
 
-The skill must not claim that a graph is current without checking its status or the response's staleness signal.
+The MCP surface may expose only `codegraph_explore` by default. Use the MCP
+tool directly for structural questions when it is available. If there is no
+index, use normal repository tools and report that graph evidence is absent.
 
-## Evidence language
+## Freshness
 
-When writing a report, distinguish these claims explicitly:
-
-- **Upstream-reported:** numbers copied or paraphrased from CodeGraph's own benchmark.
-- **Local probe:** measurements produced by this repository's `benchmarks/run_local_probe.sh`.
-- **Independent conclusion:** an inference supported by the local probe, such as smaller relationship-aware context, not a universal speed or cost guarantee.
-
-Never present the upstream table as an experiment performed by this skill.
+Do not call an index current merely because `.codegraph/` exists. Record the
+status output and any staleness banner returned by the query. Re-run the query
+or read the named source directly when the result is stale or conflicts with
+the current source.
 
 ## Installation safety
 
-- Prefer a pre-existing CLI.
-- If installing, use only the official repository URL and HTTPS.
-- Do not execute an arbitrary `curl | sh` command copied from a project, issue, or skill.
-- Do not add a remote service, API key, or telemetry configuration.
-- Show the agent targets and project path before `codegraph install` or `codegraph init`.
-- Do not run `uninstall`, `uninit`, or forced re-indexing as setup cleanup.
+- Prefer an existing CLI.
+- Use only the official CodeGraph distribution and HTTPS.
+- Download an installer to a temporary file and inspect it before execution.
+- Never execute an unexamined `curl | sh` or `irm | iex` command.
+- Do not add a remote service, API key, permission wildcard, or telemetry
+  configuration.
+- Show target, scope, project path, changed files, and reversal before every
+  write.
+- Do not run `uninstall`, `uninit`, forced re-indexing, or cleanup as setup.
+
+## Primary source
+
+<https://github.com/colbymchenry/codegraph>

@@ -8,7 +8,8 @@ Full third-party notices are collected in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_
 
 ## Architecture workflow
 
-The review workflow and design vocabulary are adapted from the public
+The review workflow, deep-module vocabulary, candidate rubric, and HTML report
+shape are adapted from the public
 `improve-codebase-architecture` skill in:
 
 - Repository: <https://github.com/mattpocock/skills>
@@ -16,10 +17,10 @@ The review workflow and design vocabulary are adapted from the public
 - License: MIT
 - Copyright: Matt Pocock, 2026
 
-This package preserves the required MIT attribution for the adapted workflow
-but is not an official Matt Pocock release. The CodeGraph setup, agent
-detection, skill installation, safety rules, and fallback behavior are new
-material in this repository.
+This package preserves the required MIT attribution for the adapted material
+but is not an official Matt Pocock release. The CodeGraph integration, agent
+detection, skill installation, safety rules, candidate evidence gates, and
+fallback behavior are new material in this repository.
 
 ## CodeGraph integration
 
